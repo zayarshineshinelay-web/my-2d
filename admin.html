@@ -1,1 +1,83 @@
 
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - 2D Bet List</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f6f9; padding: 20px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { color: #333; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .refresh-btn { display: block; width: 100%; background: #28a745; color: white; border: none; padding: 10px; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 15px; }
+        .refresh-btn:hover { background: #218838; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ဒိုင်ချုပ် - အေဂျင်များ ထိုးထားသော စာရင်းများ</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>အေဂျင်နာမည်</th>
+                <th>အချိန်</th>
+                <th>ဂဏန်း</th>
+                <th>ပမာဏ</th>
+            </tr>
+        </thead>
+        <tbody id="adminTableBody">
+            <tr><td colspan="4" style="text-align: center;">ဒေတာများကို ရယူနေပါသည်...</td></tr>
+        </tbody>
+    </table>
+
+    <button class="refresh-btn" onclick="loadAdminData()">စာရင်း အသစ်ပြန်လုပ်ရန် (Refresh)</button>
+</div>
+
+<script>
+    // Google Sheet ရဲ့ Web App URL (သို့မဟုတ် Published CSV Link) ကို ဤနေရာတွင် ထည့်ပါ
+    const sheetAPI = 'https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7lGjbATJdGIq4J7cm35oJRXPrCTartswDSV/exec';
+
+    async function loadAdminData() {
+        const tbody = document.getElementById('adminTableBody');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">ဆွဲထုတ်နေပါသည်...</td></tr>';
+
+        try {
+            // Google Sheet မှ ဒေတာများကို doGet ဖြင့် ဆွဲထုတ်ခြင်း
+            const response = await fetch(sheetAPI);
+            const result = await response.json();
+            
+            if (result.success && result.data && result.data.length > 0) {
+                tbody.innerHTML = '';
+                // နောက်ဆုံးတင်ထားတာ အပေါ်ဆုံးမှာပေါ်ရန် .reverse() သုံးထားသည်
+                result.data.slice().reverse().forEach(row => {
+                    tbody.innerHTML += `<tr>
+                        <td>${row.agent || ''}</td>
+                        <td>${row.dateTime || ''}</td>
+                        <td>${row.number || ''}</td>
+                        <td>${row.amount || ''}</td>
+                    </tr>`;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">ထိုးကြေးစာရင်း မရှိသေးပါ။</td></tr>';
+            }
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">ဒေတာရယူရာတွင် အမှားရှိနေပါသည်။</td></tr>';
+            console.error(err);
+        }
+    }
+
+    // စာမျက်နှာဖွင့်လိုက်တာနဲ့ ဒေတာဆွဲမည်
+    loadAdminData();
+    // ၅ စက္ကန့်တစ်ကြိမ် အလိုအလျောက် Refresh လုပ်မည်
+    setInterval(loadAdminData, 5000);
+</script>
+
+</body>
+</html>
+
