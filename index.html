@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="my">
 <head>
@@ -65,7 +64,6 @@
         .all-del-btn { background-color: #721c24; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; float: right; font-size: 13px; }
         .all-del-btn:hover { background-color: #501217; }
 
-        .receipt { background: #fff3cd; border: 1px dashed #ffeeba; padding: 12px; border-radius: 6px; margin-top: 12px; color: #333; }
         .agent-section { background: #e2f0d9; padding: 12px; border-radius: 8px; margin-top: 15px; border: 1px solid #c8e1b7; color: #333; }
         .clearfix::after { content: ""; clear: both; display: table; }
 
@@ -84,12 +82,12 @@
 
     <div id="homeScreen">
         <h1>Golden Brother Group 2D ဒိုင်ချုပ်</h1>
-        <button type="button" class="open-btn" onclick="openMainMenu()">OPEN 🔓</button>
+        <button type="button" class="open-btn" id="openMenuBtn">OPEN 🔓</button>
     </div>
 
     <div id="menuScreen" class="container">
-        <button type="button" class="menu-btn" onclick="showAgentLoginScreen()">1. Agent</button>
-        <button type="button" class="menu-btn" onclick="showMasterLoginScreen()" style="background: #28a745;">2. ဒိုင်ချုပ်</button>
+        <button type="button" class="menu-btn" id="showAgentLoginBtn">1. Agent</button>
+        <button type="button" class="menu-btn" id="showMasterLoginBtn" style="background: #28a745;">2. ဒိုင်ချုပ်</button>
     </div>
 
     <!-- AGENT LOGIN SCREEN -->
@@ -117,8 +115,8 @@
             <label>Password ထည့်ရန်</label>
             <input type="password" id="loginPasswordInput" placeholder="စကားဝှက်ထည့်ပါ (မူလ: 1234)">
         </div>
-        <button type="button" class="submit-btn" onclick="authenticateAgent()">Login ဝင်မည်</button>
-        <button type="button" class="back-btn" style="width: 100%; margin-top: 10px;" onclick="backToMenu()">⬅️ မီနူးသို့ ပြန်သွားရန်</button>
+        <button type="button" class="submit-btn" id="authAgentBtn">Login ဝင်မည်</button>
+        <button type="button" class="back-btn backMenuBtn" style="width: 100%; margin-top: 10px;">⬅️ မီနူးသို့ ပြန်သွားရန်</button>
     </div>
 
     <!-- MASTER LOGIN SCREEN -->
@@ -128,16 +126,16 @@
             <label>Master Password ထည့်ရန်</label>
             <input type="password" id="loginMasterPasswordInput" placeholder="ဒိုင်ချုပ် စကားဝှက်ထည့်ပါ (မူလ: 9999)">
         </div>
-        <button type="button" class="submit-btn" onclick="authenticateMaster()" style="background: #28a745;">ဒိုင်ချုပ် ဝင်မည်</button>
-        <button type="button" class="back-btn" style="width: 100%; margin-top: 10px;" onclick="backToMenu()">⬅️ မီနူးသို့ ပြန်သွားရန်</button>
+        <button type="button" class="submit-btn" id="authMasterBtn" style="background: #28a745;">ဒိုင်ချုပ် ဝင်မည်</button>
+        <button type="button" class="back-btn backMenuBtn" style="width: 100%; margin-top: 10px;">⬅️ မီနူးသို့ ပြန်သွားရန်</button>
     </div>
 
     <!-- 1. AGENT DASHBOARD SECTION -->
     <div id="agentSectionView" class="section-view">
-        <div class="master-header-box" onclick="backToHomeFromTop()">
+        <div class="master-header-box backHomeBtn">
             <h3>Golden Brother Group 2D ဒိုင်ချုပ်</h3>
         </div>
-        <button type="button" class="back-btn" onclick="backToMenu()">⬅️ မီနူးသို့ ပြန်သွားရန်</button>
+        <button type="button" class="back-btn backMenuBtn">⬅️ မီနူးသို့ ပြန်သွားရန်</button>
         
         <div class="container">
             <h2 id="loggedInAgentTitle" style="color: #28a745;">👤 Agent</h2>
@@ -170,7 +168,7 @@
                     <label style="font-size: 13px; color: #333;">Password အသစ်:</label>
                     <input type="password" id="newPasswordInput" placeholder="Password အသစ်ထည့်ရန်">
                 </div>
-                <button type="button" class="submit-btn" style="background: #ffc107; color: #333; padding: 6px;" onclick="changeAgentPassword()">Password ပြောင်းမည်</button>
+                <button type="button" class="submit-btn" id="changeAgentPassBtn" style="background: #ffc107; color: #333; padding: 6px;">Password ပြောင်းမည်</button>
             </div>
         </div>
 
@@ -179,10 +177,10 @@
 
     <!-- 2. MASTER / ဒိုင်ချုပ် SECTION -->
     <div id="masterSectionView" class="section-view">
-        <div class="master-header-box" onclick="backToHomeFromTop()">
+        <div class="master-header-box backHomeBtn">
             <h3>Golden Brother Group 2D ဒိုင်ချုပ်</h3>
         </div>
-        <button type="button" class="back-btn" onclick="backToMenu()">⬅️ မီနူးသို့ ပြန်သွားရန်</button>
+        <button type="button" class="back-btn backMenuBtn">⬅️ မီနူးသို့ ပြန်သွားရန်</button>
         
         <!-- Master Password Change Box -->
         <div class="container" style="background: #fdf2e9; border: 1px solid #fad7a0; margin-bottom: 15px;">
@@ -191,7 +189,7 @@
                 <label style="font-size: 13px; color: #333;">Master Password အသစ်:</label>
                 <input type="password" id="newMasterPasswordInput" placeholder="Password အသစ်ထည့်ရန်">
             </div>
-            <button type="button" class="submit-btn" style="background: #ffc107; color: #333; padding: 6px;" onclick="changeMasterPassword()">Master Password ပြောင်းမည်</button>
+            <button type="button" class="submit-btn" id="changeMasterPassBtn" style="background: #ffc107; color: #333; padding: 6px;">Master Password ပြောင်းမည်</button>
         </div>
 
         <div class="master-grid">
@@ -247,7 +245,7 @@
         <div class="container layout-commission">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h3 style="margin: 0;">Table - 2 (Agent အလိုက် စာရင်းချုပ်)</h3>
-                <button type="button" class="submit-btn" style="width: auto; padding: 6px 12px; font-size: 13px; background: #007bff;" onclick="copyAgentTableText()">📋 Table ကူးမည်</button>
+                <button type="button" class="submit-btn" id="copyAgentTableBtn" style="width: auto; padding: 6px 12px; font-size: 13px; background: #007bff;">📋 Table ကူးမည်</button>
             </div>
             <p>ဒိုင်ပေးရမည့် စုစုပေါင်း ကော်မရှင် (12%): <span id="grandTotalComm" style="font-weight: bold; color: blue;">0</span> ကျပ်</p>
             <p>ကော်မရှင်နှုတ်ပြီး ဒိုင်ရငွေ (Net Income): <span id="netIncome" style="font-weight: bold; color: #007bff;">0</span> ကျပ်</p>
@@ -285,12 +283,12 @@
     <!-- Voucher Detail Modal -->
     <div id="voucherModal">
         <div class="modal-content">
-            <span class="close-modal" onclick="closeVoucherModal()">&times;</span>
+            <span class="close-modal" id="closeModalBtn">&times;</span>
             <h3 style="color: #007bff; margin-bottom: 10px; text-align: left;">📄 ဘောက်ချာ အသေးစိတ်</h3>
             <div class="modal-body-scroll">
                 <div id="modalBodyContent"></div>
             </div>
-            <button type="button" class="submit-btn" style="background: #17a2b8; margin-top: 10px;" onclick="copyVoucherToClipboard()">📋 ဘောက်ချာ တစ်စုံလုံး Copy ကူးမည်</button>
+            <button type="button" class="submit-btn" id="copyVoucherModalBtn" style="background: #17a2b8; margin-top: 10px;">📋 ဘောက်ချာ တစ်စုံလုံး Copy ကူးမည်</button>
         </div>
     </div>
 
@@ -299,7 +297,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
-        // Firebase Configuration (သင့်ရဲ့ အချက်အလက်များ)
         const firebaseConfig = {
             apiKey: "AIzaSyA977VlelDdF5ujvsnEu7uJSOG6eEmpN1U",
             authDomain: "golden-brother-2d-7e1c4.firebaseapp.com",
@@ -311,7 +308,6 @@
             measurementId: "G-HG1V0H6G4F"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
@@ -324,10 +320,28 @@
             setInterval(updateDateTime, 1000);
             updateBreakClosedNumbers();
             
-            // Firebase မှ Real-time ဒေတာများကို အမြဲဖတ်ယူရန်
             loadDataFromFirebase();
 
+            // Event Listeners for Navigation & Buttons
+            document.getElementById('openMenuBtn').addEventListener('click', openMainMenu);
+            document.getElementById('showAgentLoginBtn').addEventListener('click', showAgentLoginScreen);
+            document.getElementById('showMasterLoginBtn').addEventListener('click', showMasterLoginScreen);
+            document.getElementById('authAgentBtn').addEventListener('click', authenticateAgent);
+            document.getElementById('authMasterBtn').addEventListener('click', authenticateMaster);
             document.getElementById('submitBtn').addEventListener('click', submitBetToFirebase);
+            document.getElementById('changeAgentPassBtn').addEventListener('click', changeAgentPassword);
+            document.getElementById('changeMasterPassBtn').addEventListener('click', changeMasterPassword);
+            document.getElementById('copyAgentTableBtn').addEventListener('click', copyAgentTableText);
+            document.getElementById('closeModalBtn').addEventListener('click', closeVoucherModal);
+            document.getElementById('copyVoucherModalBtn').addEventListener('click', copyVoucherToClipboard);
+
+            document.querySelectorAll('.backMenuBtn').forEach(btn => {
+                btn.addEventListener('click', backToMenu);
+            });
+            document.querySelectorAll('.backHomeBtn').forEach(btn => {
+                btn.addEventListener('click', backToHomeFromTop);
+            });
+
             document.getElementById('closedNumbers').addEventListener('input', saveSettingsManual);
             document.getElementById('breakLimitAmount').addEventListener('input', saveSettings);
             document.getElementById('winningNumber').addEventListener('input', saveSettings);
@@ -619,22 +633,14 @@
             });
 
             let batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            let latestBatchObj = { batchId, agent, name: dateTimeStr, inputDesc: rawNumberInput, items: [], totalAmount: 0 };
-
-            const betsRef = ref(db, 'bets');
-
+            
             finalNumbersToSubmit.forEach((num, index) => {
                 let uniqueId = 'bet_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + index;
                 const newBet = { id: uniqueId, batchId, agent, name: dateTimeStr, number: num, amount };
                 
-                latestBatchObj.items.push(newBet);
-                latestBatchObj.totalAmount += amount;
-
-                // Firebase Realtime Database ထဲသို့ တိုက်ရိုက်သိမ်းဆည်းခြင်း
                 const singleBetRef = ref(db, 'bets/' + uniqueId);
                 set(singleBetRef, newBet);
 
-                // Google Sheet သို့ Real-time ပို့ဆောင်ရန်
                 let sheetData = { agent: agent, dateTime: dateTimeStr, number: num, amount: amount };
                 fetch('https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7lGjbATJdGIq4J7cm35oJRXPrCTartswDSV/exec', {
                     method: 'POST',
@@ -651,7 +657,6 @@
             document.getElementById('number').focus();
         }
 
-        // Firebase မှ ဒေတာများကို အချိန်နှင့်တပြေးညီ ဖတ်ယူတင်ပြရန်
         function loadDataFromFirebase() {
             const betsRef = ref(db, 'bets');
             onValue(betsRef, (snapshot) => {
@@ -659,7 +664,6 @@
                 snapshot.forEach((childSnapshot) => {
                     bets.push(childSnapshot.val());
                 });
-                // LocalStorage မှာလည်း တခါတည်း Backup အနေနဲ့ သိမ်းထားမည်
                 localStorage.setItem('2d_bets', JSON.stringify(bets));
                 loadAllDataInternal(bets);
             });
@@ -680,7 +684,7 @@
             if (confirm(`ဤဘောက်ချာ (ဂဏန်းများ: ${numsStr} | စုစုပေါင်း: ${totalAmt.toLocaleString()} ကျပ်) ကို ဖျက်ရန် သေချာပြီလား?`)) {
                 targetBets.forEach(b => {
                     const singleBetRef = ref(db, 'bets/' + b.id);
-                    set(singleBetRef, null); // Firebase မှ ဖျက်ခြင်း
+                    set(singleBetRef, null);
                 });
             }
         }
@@ -770,6 +774,11 @@
             document.getElementById('voucherModal').style.display = 'none';
         }
 
+        window.deleteBatchFromModal = function(batchId) {
+            closeVoucherModal();
+            deleteBatchBets(batchId);
+        }
+
         function copyVoucherToClipboard() {
             if (!currentModalBatchId) return;
             let textToCopy = generateVoucherTextString(currentModalBatchId);
@@ -778,11 +787,6 @@
             }).catch(err => {
                 alert('Copy ကူးရန် မအောင်မြင်ပါ။');
             });
-        }
-
-        function deleteBatchFromModal(batchId) {
-            closeVoucherModal();
-            deleteBatchBets(batchId);
         }
 
         function deleteAllAgentBets(agentName) {
