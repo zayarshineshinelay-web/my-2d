@@ -320,9 +320,15 @@
             setInterval(updateDateTime, 1000);
             updateBreakClosedNumbers();
             
+            // ပထမဆုံး LocalStorage ထဲက ရှိပြီးသားစာရင်းများကို အရင်တင်ပြမည် (စာရင်းချက်ချင်းပေါ်စေရန်)
+            let cachedBets = JSON.parse(localStorage.getItem('2d_bets')) || [];
+            if (cachedBets.length > 0) {
+                loadAllDataInternal(cachedBets);
+            }
+
+            // ထို့နောက် Firebase မှ ဒေတာအသစ်များကို ဆက်လက်ဖတ်ယူမည်
             loadDataFromFirebase();
 
-            // Event Listeners for Navigation & Buttons
             document.getElementById('openMenuBtn').addEventListener('click', openMainMenu);
             document.getElementById('showAgentLoginBtn').addEventListener('click', showAgentLoginScreen);
             document.getElementById('showMasterLoginBtn').addEventListener('click', showMasterLoginScreen);
@@ -404,7 +410,9 @@
                 document.getElementById('agentLoginView').style.display = 'none';
                 document.getElementById('agentSectionView').style.display = 'block';
                 document.getElementById('loggedInAgentTitle').innerText = `👤 Agent: ${agentName}`;
-                loadDataFromFirebase();
+                
+                let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
+                loadAllDataInternal(bets);
             } else {
                 alert('Password မှားယွင်းနေပါသည်။ ကျေးဇူးပြု၍ ထပ်ကြိုးစားပါ။');
             }
@@ -417,7 +425,9 @@
             if (masterPassInput === correctMasterPass) {
                 document.getElementById('masterLoginView').style.display = 'none';
                 document.getElementById('masterSectionView').style.display = 'block';
-                loadDataFromFirebase();
+                
+                let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
+                loadAllDataInternal(bets);
             } else {
                 alert('ဒိုင်ချုပ် Password မှားယွင်းနေပါသည်။');
             }
@@ -456,7 +466,9 @@
             document.getElementById('agentSectionView').style.display = 'none';
             document.getElementById('masterSectionView').style.display = 'none';
             document.getElementById('menuScreen').style.display = 'block';
-            loadDataFromFirebase();
+            
+            let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
+            loadAllDataInternal(bets);
         }
 
         function updateDateTime() {
@@ -473,13 +485,15 @@
             localStorage.setItem('2d_break_limit', breakLimit);
             localStorage.setItem('2d_winning', winning);
             updateBreakClosedNumbers();
-            loadDataFromFirebase();
+            let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
+            loadAllDataInternal(bets);
         }
 
         function saveSettingsManual() {
             const closed = document.getElementById('closedNumbers').value;
             localStorage.setItem('2d_closed', closed);
-            loadDataFromFirebase();
+            let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
+            loadAllDataInternal(bets);
         }
 
         function loadSettings() {
@@ -634,10 +648,15 @@
 
             let batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             
+            // လက်ရှိ LocalStorage ထဲက စာရင်းဟောင်းများနှင့် ပေါင်းထည့်ရန်
+            let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
+
             finalNumbersToSubmit.forEach((num, index) => {
                 let uniqueId = 'bet_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + index;
-                const newBet = { id: uniqueId, batchId, agent, name: dateTimeStr, number: num, amount };
+                const newBet = { id: uniqueId, batchId, agent, name: dateTimeStr, number: num, amount, inputDesc: rawNumberInput };
                 
+                bets.push(newBet);
+
                 const singleBetRef = ref(db, 'bets/' + uniqueId);
                 set(singleBetRef, newBet);
 
@@ -649,6 +668,9 @@
                     body: JSON.stringify(sheetData)
                 }).catch(err => console.log('Sheet Sync Error:', err));
             });
+
+            localStorage.setItem('2d_bets', JSON.stringify(bets));
+            loadAllDataInternal(bets);
 
             alert('စာရင်းသိမ်းဆည်းပြီးပါပြီ!');
             document.getElementById('number').value = '';
@@ -664,8 +686,10 @@
                 snapshot.forEach((childSnapshot) => {
                     bets.push(childSnapshot.val());
                 });
-                localStorage.setItem('2d_bets', JSON.stringify(bets));
-                loadAllDataInternal(bets);
+                if (bets.length > 0) {
+                    localStorage.setItem('2d_bets', JSON.stringify(bets));
+                    loadAllDataInternal(bets);
+                }
             });
         }
 
@@ -686,6 +710,10 @@
                     const singleBetRef = ref(db, 'bets/' + b.id);
                     set(singleBetRef, null);
                 });
+
+                let updatedBets = bets.filter(b => String(b.batchId) !== String(batchId));
+                localStorage.setItem('2d_bets', JSON.stringify(updatedBets));
+                loadAllDataInternal(updatedBets);
             }
         }
 
@@ -803,6 +831,10 @@
                     const singleBetRef = ref(db, 'bets/' + b.id);
                     set(singleBetRef, null);
                 });
+
+                let updatedBets = bets.filter(b => b.agent !== agentName);
+                localStorage.setItem('2d_bets', JSON.stringify(updatedBets));
+                loadAllDataInternal(updatedBets);
             }
         }
 
