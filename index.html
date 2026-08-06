@@ -294,7 +294,27 @@
         </div>
     </div>
 
-    <script>
+    <!-- Firebase SDK နှင့် Real-time ဒေတာချိတ်ဆက်ခြင်း -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+        // Firebase Configuration (သင့်ရဲ့ အချက်အလက်များ)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA977VlelDdF5ujvsnEu7uJSOG6eEmpN1U",
+            authDomain: "golden-brother-2d-7e1c4.firebaseapp.com",
+            databaseURL: "https://golden-brother-2d-7e1c4-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "golden-brother-2d-7e1c4",
+            storageBucket: "golden-brother-2d-7e1c4.firebasestorage.app",
+            messagingSenderId: "1006934737014",
+            appId: "1:1006934737014:web:d5a56bb9f64126c4c09f57",
+            measurementId: "G-HG1V0H6G4F"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
         let currentLoggedInAgent = "";
         let currentModalBatchId = "";
 
@@ -303,9 +323,11 @@
             updateDateTime();
             setInterval(updateDateTime, 1000);
             updateBreakClosedNumbers();
-            loadAllData();
+            
+            // Firebase မှ Real-time ဒေတာများကို အမြဲဖတ်ယူရန်
+            loadDataFromFirebase();
 
-            document.getElementById('submitBtn').addEventListener('click', submitBet);
+            document.getElementById('submitBtn').addEventListener('click', submitBetToFirebase);
             document.getElementById('closedNumbers').addEventListener('input', saveSettingsManual);
             document.getElementById('breakLimitAmount').addEventListener('input', saveSettings);
             document.getElementById('winningNumber').addEventListener('input', saveSettings);
@@ -368,7 +390,7 @@
                 document.getElementById('agentLoginView').style.display = 'none';
                 document.getElementById('agentSectionView').style.display = 'block';
                 document.getElementById('loggedInAgentTitle').innerText = `👤 Agent: ${agentName}`;
-                loadAllData();
+                loadDataFromFirebase();
             } else {
                 alert('Password မှားယွင်းနေပါသည်။ ကျေးဇူးပြု၍ ထပ်ကြိုးစားပါ။');
             }
@@ -381,7 +403,7 @@
             if (masterPassInput === correctMasterPass) {
                 document.getElementById('masterLoginView').style.display = 'none';
                 document.getElementById('masterSectionView').style.display = 'block';
-                loadAllData();
+                loadDataFromFirebase();
             } else {
                 alert('ဒိုင်ချုပ် Password မှားယွင်းနေပါသည်။');
             }
@@ -420,7 +442,7 @@
             document.getElementById('agentSectionView').style.display = 'none';
             document.getElementById('masterSectionView').style.display = 'none';
             document.getElementById('menuScreen').style.display = 'block';
-            loadAllData();
+            loadDataFromFirebase();
         }
 
         function updateDateTime() {
@@ -437,13 +459,13 @@
             localStorage.setItem('2d_break_limit', breakLimit);
             localStorage.setItem('2d_winning', winning);
             updateBreakClosedNumbers();
-            loadAllData();
+            loadDataFromFirebase();
         }
 
         function saveSettingsManual() {
             const closed = document.getElementById('closedNumbers').value;
             localStorage.setItem('2d_closed', closed);
-            loadAllData();
+            loadDataFromFirebase();
         }
 
         function loadSettings() {
@@ -567,7 +589,7 @@
             return [...new Set(validNumbers)];
         }
 
-        function submitBet() {
+        function submitBetToFirebase() {
             const agent = currentLoggedInAgent;
             const dateTimeStr = document.getElementById('autoDateDisplay').value;
             const rawNumberInput = document.getElementById('number').value.trim();
@@ -596,39 +618,51 @@
                 }
             });
 
-            let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
             let batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             let latestBatchObj = { batchId, agent, name: dateTimeStr, inputDesc: rawNumberInput, items: [], totalAmount: 0 };
+
+            const betsRef = ref(db, 'bets');
 
             finalNumbersToSubmit.forEach((num, index) => {
                 let uniqueId = 'bet_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + index;
                 const newBet = { id: uniqueId, batchId, agent, name: dateTimeStr, number: num, amount };
-                bets.push(newBet);
+                
                 latestBatchObj.items.push(newBet);
                 latestBatchObj.totalAmount += amount;
 
-      // Google Sheet သို့ Real-time ပို့ဆောင်ရန်
-let sheetData = { agent: agent, dateTime: dateTimeStr, number: num, amount: amount };
-fetch('https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7lGjbATJdGIq4J7cm35oJRXPrCTartswDSV/exec', {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(sheetData)
-}).catch(err => console.log('Sheet Sync Error:', err));
+                // Firebase Realtime Database ထဲသို့ တိုက်ရိုက်သိမ်းဆည်းခြင်း
+                const singleBetRef = ref(db, 'bets/' + uniqueId);
+                set(singleBetRef, newBet);
 
+                // Google Sheet သို့ Real-time ပို့ဆောင်ရန်
+                let sheetData = { agent: agent, dateTime: dateTimeStr, number: num, amount: amount };
+                fetch('https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7lGjbATJdGIq4J7cm35oJRXPrCTartswDSV/exec', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sheetData)
+                }).catch(err => console.log('Sheet Sync Error:', err));
             });
 
-            localStorage.setItem('2d_bets', JSON.stringify(bets));
-            updateBreakClosedNumbers();
-
+            alert('စာရင်းသိမ်းဆည်းပြီးပါပြီ!');
             document.getElementById('number').value = '';
             document.getElementById('amount').value = '';
             document.getElementById('rCheckbox').checked = false;
             document.getElementById('number').focus();
+        }
 
-            loadAllData(latestBatchObj);
+        // Firebase မှ ဒေတာများကို အချိန်နှင့်တပြေးညီ ဖတ်ယူတင်ပြရန်
+        function loadDataFromFirebase() {
+            const betsRef = ref(db, 'bets');
+            onValue(betsRef, (snapshot) => {
+                let bets = [];
+                snapshot.forEach((childSnapshot) => {
+                    bets.push(childSnapshot.val());
+                });
+                // LocalStorage မှာလည်း တခါတည်း Backup အနေနဲ့ သိမ်းထားမည်
+                localStorage.setItem('2d_bets', JSON.stringify(bets));
+                loadAllDataInternal(bets);
+            });
         }
 
         function deleteBatchBets(batchId) {
@@ -644,10 +678,10 @@ fetch('https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7
             let numsStr = targetBets.map(b => b.number).join(', ');
 
             if (confirm(`ဤဘောက်ချာ (ဂဏန်းများ: ${numsStr} | စုစုပေါင်း: ${totalAmt.toLocaleString()} ကျပ်) ကို ဖျက်ရန် သေချာပြီလား?`)) {
-                bets = bets.filter(bet => String(bet.batchId) !== String(batchId));
-                localStorage.setItem('2d_bets', JSON.stringify(bets));
-                updateBreakClosedNumbers();
-                loadAllData();
+                targetBets.forEach(b => {
+                    const singleBetRef = ref(db, 'bets/' + b.id);
+                    set(singleBetRef, null); // Firebase မှ ဖျက်ခြင်း
+                });
             }
         }
 
@@ -761,10 +795,10 @@ fetch('https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7
             }
 
             if (confirm(`⚠️ (${agentName}) ၏ ထိုးငွေ ဘောက်ချာအားလုံးကို အကုန်ဖျက်ပစ်ရန် သေချာပြီလား?`)) {
-                bets = bets.filter(b => b.agent !== agentName);
-                localStorage.setItem('2d_bets', JSON.stringify(bets));
-                updateBreakClosedNumbers();
-                loadAllData();
+                agentBets.forEach(b => {
+                    const singleBetRef = ref(db, 'bets/' + b.id);
+                    set(singleBetRef, null);
+                });
             }
         }
 
@@ -846,13 +880,12 @@ fetch('https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7
             });
         }
 
-        function loadAllData(latestBatch = null) {
+        function loadAllDataInternal(bets) {
             updateBreakClosedNumbers();
 
             const currentAgent = currentLoggedInAgent;
             const winningNum = localStorage.getItem('2d_winning') || '';
             const breakLimit = Number(localStorage.getItem('2d_break_limit') || 0);
-            let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
 
             if (currentAgent) {
                 const receiptArea = document.getElementById('agentReceiptArea');
@@ -887,18 +920,6 @@ fetch('https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7
                     }
 
                     sectionDiv.appendChild(headerDiv);
-
-                    if (latestBatch && latestBatch.agent === currentAgent) {
-                        let receiptDiv = document.createElement('div');
-                        receiptDiv.className = 'receipt';
-                        receiptDiv.innerHTML = `
-                            <h3 style="margin-top:0; color: #856404;">📝 နောက်ဆုံးထိုးထားသော ဘောက်ချာ (${latestBatch.agent})</h3>
-                            <p><b>အချိန်:</b> ${latestBatch.name}</p>
-                            <p><b>ဂဏန်းအရေအတွက်:</b> ${latestBatch.items.length} ကွက်</p>
-                            <p><b>စုစုပေါင်းငွေ:</b> ${latestBatch.totalAmount.toLocaleString()} ကျပ်</p>
-                        `;
-                        sectionDiv.appendChild(receiptDiv);
-                    }
 
                     agentBets.forEach(bet => { agentTotalAmount += Number(bet.amount || 0); });
                     let totalP = document.createElement('p');
@@ -1198,5 +1219,3 @@ fetch('https://script.google.com/macros/s/AKfycbykG8F_pOsKAGTYC1TdFWmTXEvf85NKv7
 
 </body>
 </html>
-
-
