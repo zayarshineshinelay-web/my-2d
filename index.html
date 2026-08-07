@@ -548,22 +548,35 @@
             }
         }
 
+                function openMainMenu() {
+            document.getElementById('homeScreen').style.display = 'none';
+            document.getElementById('menuScreen').style.display = 'block';
+        }
+
+        function backToHomeFromTop() {
+            document.getElementById('agentSectionView').style.display = 'none';
+            document.getElementById('masterSectionView').style.display = 'none';
+            document.getElementById('agentLoginView').style.display = 'none';
+            document.getElementById('masterLoginView').style.display = 'none';
+            document.getElementById('menuScreen').style.display = 'none';
+            document.getElementById('homeScreen').style.display = 'block';
+        }
+
+        // Parse Input Function (Shortcut အားလုံးပါဝင်သည်)
         function parseInputNumbers(rawInput) {
             let cleanInput = rawInput.trim();
-            
+
+            // 1. အခွေ
             let akweiMatch = cleanInput.match(/^([0-9]+)\s*အခွေ(.*)$/);
             if (akweiMatch) {
                 let digitsStr = akweiMatch[1];
                 let optionStr = akweiMatch[2];
                 let includeApu = optionStr.includes("ပူးပါ") || optionStr.includes("အပူးပါ");
-
                 let digits = digitsStr.split('');
                 let akweiNums = [];
                 for (let i = 0; i < digits.length; i++) {
                     for (let j = 0; j < digits.length; j++) {
-                        if (i !== j) {
-                            akweiNums.push(digits[i] + digits[j]);
-                        } else if (includeApu) {
+                        if (i !== j || includeApu) {
                             akweiNums.push(digits[i] + digits[j]);
                         }
                     }
@@ -571,6 +584,41 @@
                 return [...new Set(akweiNums)];
             }
 
+            // 2. အပါ
+            let apaMatch = cleanInput.match(/^([0-9])\s*အပါ$/);
+            if (apaMatch) {
+                let targetDigit = apaMatch[1];
+                let apaNumbers = [];
+                for (let i = 0; i <= 9; i++) {
+                    apaNumbers.push(targetDigit + String(i));
+                    apaNumbers.push(String(i) + targetDigit);
+                }
+                return [...new Set(apaNumbers)];
+            }
+
+            // 3. ထိပ်
+            let headMatch = cleanInput.match(/^([0-9])\s*ထိပ်$/);
+            if (headMatch) {
+                let headDigit = headMatch[1];
+                let headNumbers = [];
+                for (let i = 0; i <= 9; i++) {
+                    headNumbers.push(headDigit + String(i));
+                }
+                return headNumbers;
+            }
+
+            // 4. ပိတ် / အပိတ်
+            let endMatch = cleanInput.match(/^([0-9])\s*(ပိတ်|အပိတ်)$/);
+            if (endMatch) {
+                let endDigit = endMatch[1];
+                let endNumbers = [];
+                for (let i = 0; i <= 9; i++) {
+                    endNumbers.push(String(i) + endDigit);
+                }
+                return endNumbers;
+            }
+
+            // 5. ဘရိတ်
             let breakMatch = cleanInput.match(/^([0-9])\s*ဘရိတ်$/);
             if (breakMatch) {
                 let targetDigit = parseInt(breakMatch[1]);
@@ -585,28 +633,20 @@
                 return [...new Set(brakeNumbers)];
             }
 
+            // 6. အခြား Shortcut များ
             if (cleanInput === "အပူး") {
                 let apuNumbers = [];
                 for (let i = 0; i <= 9; i++) apuNumbers.push(String(i) + String(i));
                 return apuNumbers;
             }
+            if (cleanInput === "ညီကို") return ["01", "12", "23", "34", "45", "56", "67", "78", "89", "90", "10", "21", "32", "43", "54", "65", "76", "87", "98", "09"];
+            if (cleanInput === "ပါဝါ") return ["05", "16", "27", "38", "49", "50", "61", "72", "83", "94"];
+            if (cleanInput === "နက္ခတ်") return ["07", "18", "24", "35", "96", "70", "81", "42", "53", "69"];
 
-            if (cleanInput === "ညီကိုဂဏန်း" || cleanInput === "ညီကို") {
-                return ["01", "12", "23", "34", "45", "56", "67", "78", "89", "90", "10", "21", "32", "43", "54", "65", "76", "87", "98", "09"];
-            }
-
-            if (cleanInput === "ပါဝါဂဏန်း" || cleanInput === "ပါဝါ") {
-                return ["05", "16", "27", "38", "49", "50", "61", "72", "83", "94"];
-            }
-
-            if (cleanInput === "နက္ခတ်ဂဏန်း" || cleanInput === "နက္ခတ်") {
-                return ["07", "18", "24", "35", "96", "70", "81", "42", "53", "69"];
-            }
-
+            // 7. ပုံမှန်ဂဏန်း
             let cleanStr = cleanInput.replace(/[,/]/g, ' ');
             let tokens = cleanStr.split(/\s+/).filter(n => n.length > 0);
             let validNumbers = [];
-            
             tokens.forEach(token => {
                 let digits = token.replace(/\D/g, '');
                 for (let i = 0; i < digits.length; i += 2) {
@@ -615,6 +655,11 @@
                 }
             });
             return [...new Set(validNumbers)];
+        }
+
+        // ကျန်ရှိသော event listener နှင့် အခြား function များ (Submit, Login, LoadData စသည်တို့ကိုလည်း ထည့်ရန်)
+        // ... (သင်၏ HTML ထဲက ကျန်ရှိသော function များအားလုံးကို ဒီနေရာမှာ ဆက်ရေးပါ)
+
         }
 
         function submitBetToFirebase() {
