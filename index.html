@@ -233,11 +233,33 @@
                     <tr>
                         <th>ဂဏန်း</th>
                         <th>စုစုပေါင်း ထိုးငွေ (ကျပ်)</th>
-                        <th>အခြေအနေ / ဘရိတ်</th>
+                        <th>အခြေအနေ</th>
                     </tr>
                 </thead>
                 <tbody id="numberSummaryTable">
                     <tr><td colspan="3" style="text-align: center;">ထိုးငွေ မရှိသေးပါ။</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ကာသီး (ဘရိတ်ကျော်ငွေများ) Table -->
+        <div class="container" style="margin-top: 15px; background: #fff3cd; border: 1px solid #ffeeba;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #856404;">⚠️ ကာသီး (ဒိုင်ဘရိတ်ကျော်ငွေများ) ဇယား</h3>
+                <button type="button" class="submit-btn" id="copyKathiTableBtn" style="width: auto; padding: 6px 12px; font-size: 13px; background: #ffc107; color: #333;">📋 ကာသီး Table ကူးမည်</button>
+            </div>
+            <table>
+                <thead>
+                    <tr style="background-color: #ffc107; color: #333;">
+                        <th>Agent အမည်</th>
+                        <th>ဂဏန်း</th>
+                        <th>စုစုပေါင်းထိုးငွေ</th>
+                        <th>ဘရိတ်သတ်မှတ်ငွေ</th>
+                        <th>ကျော်လွန်ငွေ (ကာသီး)</th>
+                    </tr>
+                </thead>
+                <tbody id="kathiSummaryTable">
+                    <tr><td colspan="5" style="text-align: center;">ကာသီး စာရင်း မရှိသေးပါ။</td></tr>
                 </tbody>
             </table>
         </div>
@@ -319,7 +341,6 @@
             updateDateTime();
             setInterval(updateDateTime, 1000);
             
-            // Firebase Real-time listeners များ (ဒိုင်ဆက်တင်များနှင့် ဘက်များ အမြဲတမ်း တစ်ပြေးညီဖြစ်စေရန်)
             listenToFirebaseDatabase();
 
             document.getElementById('openMenuBtn').addEventListener('click', openMainMenu);
@@ -331,6 +352,7 @@
             document.getElementById('changeAgentPassBtn').addEventListener('click', changeAgentPassword);
             document.getElementById('changeMasterPassBtn').addEventListener('click', changeMasterPassword);
             document.getElementById('copyAgentTableBtn').addEventListener('click', copyAgentTableText);
+            document.getElementById('copyKathiTableBtn').addEventListener('click', copyKathiTableText);
             document.getElementById('closeModalBtn').addEventListener('click', closeVoucherModal);
             document.getElementById('copyVoucherModalBtn').addEventListener('click', copyVoucherToClipboard);
 
@@ -341,7 +363,6 @@
                 btn.addEventListener('click', backToHomeFromTop);
             });
 
-            // ဒိုင်ဆက်တင်များ ပြောင်းလဲမှုကို Real-time တင်ရန်
             document.getElementById('closedNumbers').addEventListener('input', updateMasterSettingsToFirebase);
             document.getElementById('breakLimitAmount').addEventListener('input', updateMasterSettingsToFirebase);
             document.getElementById('winningNumber').addEventListener('input', updateMasterSettingsToFirebase);
@@ -366,9 +387,7 @@
             });
         });
 
-        // Firebase မှ ဒေတာနှင့် ဆက်တင်များကို Real-time နားထောင်ရန်
         function listenToFirebaseDatabase() {
-            // ၁။ Bet စာရင်းများ
             const betsRef = ref(db, 'bets');
             onValue(betsRef, (snapshot) => {
                 let bets = [];
@@ -379,7 +398,6 @@
                 loadAllDataInternal(bets);
             });
 
-            // ၂။ ဒိုင်ဆက်တင်များ (ပိတ်ဂဏန်း၊ ဘရိတ်၊ ထွက်ဂဏန်း)
             const settingsRef = ref(db, 'settings');
             onValue(settingsRef, (snapshot) => {
                 const settings = snapshot.val();
@@ -395,6 +413,9 @@
                     if (settings.winningNumber !== undefined) {
                         document.getElementById('winningNumber').value = settings.winningNumber;
                         localStorage.setItem('2d_winning', settings.winningNumber);
+                    }
+                    if (settings.agentPasswords !== undefined) {
+                        localStorage.setItem('2d_agent_passwords', JSON.stringify(settings.agentPasswords));
                     }
                     let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
                     loadAllDataInternal(bets);
@@ -491,8 +512,13 @@
             agentPasswords[currentLoggedInAgent] = newPass;
             localStorage.setItem('2d_agent_passwords', JSON.stringify(agentPasswords));
 
-            alert(`(${currentLoggedInAgent}) ၏ Password ကို အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။`);
-            document.getElementById('newPasswordInput').value = '';
+            const settingsRef = ref(db, 'settings');
+            update(settingsRef, {
+                agentPasswords: agentPasswords
+            }).then(() => {
+                alert(`(${currentLoggedInAgent}) ၏ Password ကို အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။`);
+                document.getElementById('newPasswordInput').value = '';
+            });
         }
 
         function changeMasterPassword() {
@@ -548,33 +574,6 @@
                 }
             });
             return [...new Set(closedList)];
-        }
-
-        function updateBreakClosedNumbers() {
-            let breakLimit = Number(localStorage.getItem('2d_break_limit') || 0);
-            let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
-            let numTotals = {};
-            bets.forEach(b => {
-                let num = b.number.trim();
-                let amt = Number(b.amount || 0);
-                numTotals[num] = (numTotals[num] || 0) + amt;
-            });
-
-            let currentClosed = getClosedNumbersArray();
-            let updatedClosed = [...currentClosed];
-
-            if (breakLimit > 0) {
-                for (let num in numTotals) {
-                    if (numTotals[num] >= breakLimit && !updatedClosed.includes(num)) {
-                        updatedClosed.push(num);
-                    }
-                }
-            }
-
-            const closedElem = document.getElementById('closedNumbers');
-            if (closedElem && document.activeElement !== closedElem) {
-                closedElem.value = updatedClosed.join(' ');
-            }
         }
 
         function parseInputNumbers(rawInput) {
@@ -682,6 +681,23 @@
                 return;
             }
 
+            // ပိတ်ဂဏန်းများ ပါဝင်ခြင်းရှိမရှိ စစ်ဆေးပြီး တောင်းဆိုထားသည့် စာသားဖြင့် တားဆီးရန်
+            let closedNumbersArr = getClosedNumbersArray();
+            let conflictClosed = parsedNums.filter(num => closedNumbersArr.includes(num));
+            if (isR) {
+                parsedNums.forEach(num => {
+                    let rev = num.split('').reverse().join('');
+                    if (closedNumbersArr.includes(rev) && !conflictClosed.includes(rev)) {
+                        conflictClosed.push(rev);
+                    }
+                });
+            }
+
+            if (conflictClosed.length > 0) {
+                alert(`ဂဏန်းပြည့်ပါပြီ အားပေးမူ့အတွက် ကျေးဇူးတင်ပါတယ်`);
+                return;
+            }
+
             let finalNumbersToSubmit = [];
             parsedNums.forEach(num => {
                 if (!finalNumbersToSubmit.includes(num)) finalNumbersToSubmit.push(num);
@@ -695,7 +711,6 @@
 
             let batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             
-            // Firebase Multi-path update အသုံးပြု၍ တစ်ပြိုင်နက်တည်း အမြန်ဆုံး ပို့မည်
             let updates = {};
             finalNumbersToSubmit.forEach((num, index) => {
                 let uniqueId = 'bet_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + index;
@@ -715,7 +730,6 @@
             document.getElementById('number').focus();
         }
 
-        // ဘောက်ချာတစ်ခုလုံး (batchId ပါသမျှအားလုံး) ကို တစ်ခါတည်း အကုန်ဖျက်ပေးခြင်း
         function deleteBatchBets(batchId) {
             let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
             let targetBets = bets.filter(b => String(b.batchId) === String(batchId));
@@ -731,18 +745,15 @@
             if (confirm(`ဤဘောက်ချာ (ဂဏန်းများ: ${numsStr} | စုစုပေါင်း: ${totalAmt.toLocaleString()} ကျပ်) ကို ဖျက်ရန် သေချာပြီလား?`)) {
                 let updates = {};
                 targetBets.forEach(b => {
-                    updates['bets/' + b.id] = null; // Firebase တွင် null ပေးခြင်းဖြင့် အမှန်တကယ် ပျက်သွားစေမည်
+                    updates['bets/' + b.id] = null;
                 });
 
-                update(ref(db), updates).then(() => {
-                    // ဖျက်ပြီးပါက အခြားဖုန်းများပါ onValue မှတဆင့် ချက်ချင်း ပြောင်းလဲသွားမည်
-                }).catch(err => {
+                update(ref(db), updates).catch(err => {
                     console.error("Delete error:", err);
                 });
             }
         }
 
-        // ဤ Agent ၏ ဘောက်ချာအားလုံးကို အကုန်ဖျက်ရန်
         function deleteAllAgentBets(agentName) {
             let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
             let agentBets = bets.filter(b => b.agent === agentName);
@@ -934,9 +945,57 @@
             });
         }
 
-        function loadAllDataInternal(bets) {
-            updateBreakClosedNumbers();
+        function copyKathiTableText() {
+            let breakLimit = Number(localStorage.getItem('2d_break_limit') || 0);
+            if (breakLimit <= 0) {
+                alert('ဒိုင်ဘရိတ် သတ်မှတ်ထားခြင်း မရှိသေးပါ။');
+                return;
+            }
 
+            let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
+            let agentList = [
+                "ဦးရှမ်း", "မိုးအေး", "မယ်နု", "ရှင်းရှင်းလေး", 
+                "အမ်း", "ကိုကျော်မြင့်", "ထွန်းထွန်း", "မီးမီး", 
+                "နှင်းအိဝေ", "ဖိုးသား", "မဝင်းဠေး", "မတိုး", "ရွှေပန်ဆန်း"
+            ];
+
+            let text = "⚠️ Golden Brother Group 2D - ကာသီး (ဘရိတ်ကျော်ငွေများ)\n";
+            text += "====================================\n";
+            text += "Agent အမည် | ဂဏန်း | ထိုးငွေ | ဘရိတ် | ကျော်ငွေ(ကာသီး)\n";
+            text += "------------------------------------\n";
+
+            let hasKathi = false;
+            agentList.forEach(agName => {
+                let aBets = bets.filter(b => b.agent === agName);
+                let aNumTotals = {};
+                aBets.forEach(b => {
+                    let num = b.number.trim();
+                    let amt = Number(b.amount || 0);
+                    aNumTotals[num] = (aNumTotals[num] || 0) + amt;
+                });
+
+                for (let num in aNumTotals) {
+                    let totalAmt = aNumTotals[num];
+                    if (totalAmt > breakLimit) {
+                        hasKathi = true;
+                        let kathiAmt = totalAmt - breakLimit;
+                        text += `${agName} | ${num} | ${totalAmt.toLocaleString()} | ${breakLimit.toLocaleString()} | ${kathiAmt.toLocaleString()} ကျပ်\n`;
+                    }
+                }
+            });
+
+            if (!hasKathi) {
+                alert('ကာသီး (ဘရိတ်ကျော်ငွေ) စာရင်း မရှိသေးပါ။');
+                return;
+            }
+            text += "====================================";
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('📋 ကာသီး Table စာသားကို အောင်မြင်စွာ Copy ကူးပြီးပါပြီ!');
+            });
+        }
+
+        function loadAllDataInternal(bets) {
             const currentAgent = currentLoggedInAgent;
             const winningNum = localStorage.getItem('2d_winning') || '';
             const breakLimit = Number(localStorage.getItem('2d_break_limit') || 0);
@@ -1105,17 +1164,64 @@
                         let statusText = 'ပုံမှန်';
                         let statusColor = 'green';
                         
-                        if (breakLimit > 0) {
-                            if (totalAmt >= breakLimit) {
-                                statusText = '⚠️ ဘရိတ်ပြည့် / ပိတ်ပြီး';
-                                statusColor = 'red';
-                            }
+                        if (breakLimit > 0 && totalAmt > breakLimit) {
+                            statusText = `⚠️ ဘရိတ်ကျော်ငွေ (ကာသီး: +${(totalAmt - breakLimit).toLocaleString()})`;
+                            statusColor = 'red';
                         }
 
                         numberSummaryTable.innerHTML += `<tr>
                             <td><b>${num}</b></td>
                             <td>${totalAmt.toLocaleString()} ကျပ်</td>
                             <td style="color: ${statusColor}; font-weight: bold;">${statusText}</td>
+                        </tr>`;
+                    });
+                }
+            }
+
+            const kathiSummaryTable = document.getElementById('kathiSummaryTable');
+            if (kathiSummaryTable) {
+                kathiSummaryTable.innerHTML = '';
+                let agentList = [
+                    "ဦးရှမ်း", "မိုးအေး", "မယ်နု", "ရှင်းရှင်းလေး", 
+                    "အမ်း", "ကိုကျော်မြင့်", "ထွန်းထွန်း", "မီးမီး", 
+                    "နှင်းအိဝေ", "ဖိုးသား", "မဝင်းဠေး", "မတိုး", "ရွှေပန်ဆန်း"
+                ];
+
+                let kathiRows = [];
+                agentList.forEach(agName => {
+                    let aBets = bets.filter(b => b.agent === agName);
+                    let aNumTotals = {};
+                    aBets.forEach(b => {
+                        let num = b.number.trim();
+                        let amt = Number(b.amount || 0);
+                        aNumTotals[num] = (aNumTotals[num] || 0) + amt;
+                    });
+
+                    for (let num in aNumTotals) {
+                        let totalAmt = aNumTotals[num];
+                        if (breakLimit > 0 && totalAmt > breakLimit) {
+                            let kathiAmt = totalAmt - breakLimit;
+                            kathiRows.push({
+                                agent: agName,
+                                number: num,
+                                total: totalAmt,
+                                limit: breakLimit,
+                                kathi: kathiAmt
+                            });
+                        }
+                    }
+                });
+
+                if (kathiRows.length === 0) {
+                    kathiSummaryTable.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">ကာသီး (ဘရိတ်ကျော်ငွေ) စာရင်း မရှိသေးပါ။</td></tr>';
+                } else {
+                    kathiRows.forEach(row => {
+                        kathiSummaryTable.innerHTML += `<tr>
+                            <td><b>${row.agent}</b></td>
+                            <td><b>${row.number}</b></td>
+                            <td>${row.total.toLocaleString()} ကျပ်</td>
+                            <td>${row.limit.toLocaleString()} ကျပ်</td>
+                            <td style="color: red; font-weight: bold;">+ ${row.kathi.toLocaleString()} ကျပ်</td>
                         </tr>`;
                     });
                 }
@@ -1191,7 +1297,7 @@
 
                     let aTable = document.createElement('table');
                     let aThead = document.createElement('thead');
-                    aThead.innerHTML = `<tr><th>ဂဏန်း</th><th>စုစုပေါင်း ထိုးငွေ (ကျပ်)</th><th>အခြေအနေ / ဘရိတ်</th></tr>`;
+                    aThead.innerHTML = `<tr><th>ဂဏန်း</th><th>စုစုပေါင်း ထိုးငွေ (ကျပ်)</th><th>အခြေအနေ</th></tr>`;
                     aTable.appendChild(aThead);
 
                     let aTbody = document.createElement('tbody');
@@ -1200,11 +1306,9 @@
                         let statusText = 'ပုံမှန်';
                         let statusColor = 'green';
 
-                        if (breakLimit > 0) {
-                            if (totalAmt >= breakLimit) {
-                                statusText = '⚠️ ဘရိတ်ပြည့် / ပိတ်ပြီး';
-                                statusColor = 'red';
-                            }
+                        if (breakLimit > 0 && totalAmt > breakLimit) {
+                            statusText = `⚠️ ကာသီး (+${(totalAmt - breakLimit).toLocaleString()})`;
+                            statusColor = 'red';
                         }
 
                         aTbody.innerHTML += `<tr>
