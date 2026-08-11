@@ -471,7 +471,7 @@
             const passwordInput = document.getElementById('loginPasswordInput').value.trim();
 
             let agentPasswords = JSON.parse(localStorage.getItem('2d_agent_passwords')) || {};
-            let currentPassword = agentPasswords[agentName] || "1234";
+            let currentPassword = agentPasswords[agentName] || "0000";
 
             if (passwordInput === currentPassword) {
                 currentLoggedInAgent = agentName;
