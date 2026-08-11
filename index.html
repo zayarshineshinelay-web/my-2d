@@ -488,7 +488,7 @@
 
         function authenticateMaster() {
             const masterPassInput = document.getElementById('loginMasterPasswordInput').value.trim();
-            const correctMasterPass = localStorage.getItem('2d_master_password') || "9999";
+            const correctMasterPass = localStorage.getItem('2d_master_password') || "4444";
 
             if (masterPassInput === correctMasterPass) {
                 document.getElementById('masterLoginView').style.display = 'none';
