@@ -313,11 +313,11 @@
             <button type="button" class="submit-btn" id="copyVoucherModalBtn" style="background: #17a2b8; margin-top: 10px;">📋 ဘောက်ချာ တစ်စုံလုံး Copy ကူးမည်</button>
         </div>
     </div>
-
+    
     <!-- Firebase SDK နှင့် Real-time ဒေတာချိတ်ဆက်ခြင်း -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA977VlelDdF5ujvsnEu7uJSOG6eEmpN1U",
@@ -663,7 +663,12 @@
             return [...new Set(validNumbers)];
         }
 
+        // Optimization: Prevent double-click spamming and use efficient batch building
+        let isSubmitting = false;
+
         function submitBetToFirebase() {
+            if (isSubmitting) return;
+
             const agent = currentLoggedInAgent;
             const dateTimeStr = document.getElementById('autoDateDisplay').value;
             const rawNumberInput = document.getElementById('number').value.trim();
@@ -681,7 +686,6 @@
                 return;
             }
 
-            // ပိတ်ဂဏန်းများ ပါဝင်ခြင်းရှိမရှိ စစ်ဆေးပြီး တောင်းဆိုထားသည့် စာသားဖြင့် တားဆီးရန်
             let closedNumbersArr = getClosedNumbersArray();
             let conflictClosed = parsedNums.filter(num => closedNumbersArr.includes(num));
             if (isR) {
@@ -709,25 +713,36 @@
                 }
             });
 
+            isSubmitting = true;
+            const submitBtnElement = document.getElementById('submitBtn');
+            submitBtnElement.disabled = true;
+            submitBtnElement.style.opacity = '0.6';
+
             let batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             
             let updates = {};
+            let timestampNow = Date.now();
             finalNumbersToSubmit.forEach((num, index) => {
-                let uniqueId = 'bet_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + index;
+                let uniqueId = 'bet_' + timestampNow + '_' + index + '_' + Math.random().toString(36).substr(2, 4);
                 const newBet = { id: uniqueId, batchId, agent, name: dateTimeStr, number: num, amount, inputDesc: rawNumberInput };
                 updates['bets/' + uniqueId] = newBet;
             });
 
+            // Single network request (Batch update) for fast and reliable synchronization
             update(ref(db), updates).then(() => {
                 alert('စာရင်းသိမ်းဆည်းပြီးပါပြီ!');
+                document.getElementById('number').value = '';
+                document.getElementById('amount').value = '';
+                document.getElementById('rCheckbox').checked = false;
+                document.getElementById('number').focus();
             }).catch(err => {
                 console.error("Firebase submit error:", err);
+                alert('စာရင်း တင်သွင်းရာတွင် အမှားအယွင်းရှိပါသည်။ ထပ်ကြိုးစားပါ။');
+            }).finally(() => {
+                isSubmitting = false;
+                submitBtnElement.disabled = false;
+                submitBtnElement.style.opacity = '1';
             });
-
-            document.getElementById('number').value = '';
-            document.getElementById('amount').value = '';
-            document.getElementById('rCheckbox').checked = false;
-            document.getElementById('number').focus();
         }
 
         function deleteBatchBets(batchId) {
@@ -1351,5 +1366,4 @@
         }
     </script>
 
-</body>
-</html>
+   
