@@ -313,11 +313,11 @@
             <button type="button" class="submit-btn" id="copyVoucherModalBtn" style="background: #17a2b8; margin-top: 10px;">📋 ဘောက်ချာ တစ်စုံလုံး Copy ကူးမည်</button>
         </div>
     </div>
-    
+
     <!-- Firebase SDK နှင့် Real-time ဒေတာချိတ်ဆက်ခြင်း -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA977VlelDdF5ujvsnEu7uJSOG6eEmpN1U",
@@ -332,10 +332,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
-        enableIndexedDbPersistence(db).catch((err) => {
-            console.warn("Persistence error:", err);
-        });
 
         let currentLoggedInAgent = "";
         let currentModalBatchId = "";
@@ -421,13 +417,6 @@
                     if (settings.agentPasswords !== undefined) {
                         localStorage.setItem('2d_agent_passwords', JSON.stringify(settings.agentPasswords));
                     }
-                    if (settings.masterPassword !== undefined) {
-                        localStorage.setItem('2d_master_password', settings.masterPassword);
-                    } else {
-                        if (!localStorage.getItem('2d_master_password')) {
-                            localStorage.setItem('2d_master_password', '4444');
-                        }
-                    }
                     let bets = JSON.parse(localStorage.getItem('2d_bets')) || [];
                     loadAllDataInternal(bets);
                 }
@@ -482,7 +471,7 @@
             const passwordInput = document.getElementById('loginPasswordInput').value.trim();
 
             let agentPasswords = JSON.parse(localStorage.getItem('2d_agent_passwords')) || {};
-            let currentPassword = agentPasswords[agentName] || "1234";
+            let currentPassword = agentPasswords[agentName] || "0000";
 
             if (passwordInput === currentPassword) {
                 currentLoggedInAgent = agentName;
@@ -539,16 +528,9 @@
                 return;
             }
 
-            const settingsRef = ref(db, 'settings');
-            update(settingsRef, {
-                masterPassword: newMasterPass
-            }).then(() => {
-                localStorage.setItem('2d_master_password', newMasterPass);
-                alert('ဒိုင်ချုပ် (Master) ၏ Password ကို အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။');
-                document.getElementById('newMasterPasswordInput').value = '';
-            }).catch(err => {
-                alert('Password ပြောင်းလဲရာတွင် အမှားအယွင်းရှိပါသည်။');
-            });
+            localStorage.setItem('2d_master_password', newMasterPass);
+            alert('ဒိုင်ချုပ် (Master) ၏ Password ကို အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။');
+            document.getElementById('newMasterPasswordInput').value = '';
         }
 
         function backToMenu() {
@@ -681,11 +663,7 @@
             return [...new Set(validNumbers)];
         }
 
-        let isSubmitting = false;
-
         function submitBetToFirebase() {
-            if (isSubmitting) return;
-
             const agent = currentLoggedInAgent;
             const dateTimeStr = document.getElementById('autoDateDisplay').value;
             const rawNumberInput = document.getElementById('number').value.trim();
@@ -703,6 +681,7 @@
                 return;
             }
 
+            // ပိတ်ဂဏန်းများ ပါဝင်ခြင်းရှိမရှိ စစ်ဆေးပြီး တောင်းဆိုထားသည့် စာသားဖြင့် တားဆီးရန်
             let closedNumbersArr = getClosedNumbersArray();
             let conflictClosed = parsedNums.filter(num => closedNumbersArr.includes(num));
             if (isR) {
@@ -730,35 +709,25 @@
                 }
             });
 
-            isSubmitting = true;
-            const submitBtnElement = document.getElementById('submitBtn');
-            submitBtnElement.disabled = true;
-            submitBtnElement.style.opacity = '0.6';
-
             let batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             
             let updates = {};
-            let timestampNow = Date.now();
             finalNumbersToSubmit.forEach((num, index) => {
-                let uniqueId = 'bet_' + timestampNow + '_' + index + '_' + Math.random().toString(36).substr(2, 4);
+                let uniqueId = 'bet_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + index;
                 const newBet = { id: uniqueId, batchId, agent, name: dateTimeStr, number: num, amount, inputDesc: rawNumberInput };
                 updates['bets/' + uniqueId] = newBet;
             });
 
             update(ref(db), updates).then(() => {
                 alert('စာရင်းသိမ်းဆည်းပြီးပါပြီ!');
-                document.getElementById('number').value = '';
-                document.getElementById('amount').value = '';
-                document.getElementById('rCheckbox').checked = false;
-                document.getElementById('number').focus();
             }).catch(err => {
                 console.error("Firebase submit error:", err);
-                alert('စာရင်း တင်သွင်းရာတွင် အမှားအယွင်းရှိပါသည်။ ထပ်ကြိုးစားပါ။');
-            }).finally(() => {
-                isSubmitting = false;
-                submitBtnElement.disabled = false;
-                submitBtnElement.style.opacity = '1';
             });
+
+            document.getElementById('number').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('rCheckbox').checked = false;
+            document.getElementById('number').focus();
         }
 
         function deleteBatchBets(batchId) {
@@ -1381,5 +1350,6 @@
             }
         }
     </script>
+
 </body>
 </html>
