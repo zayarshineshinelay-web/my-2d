@@ -314,7 +314,7 @@
         </div>
     </div>
     
-    <!-- Firebase SDK နှင့် Real-time ဒေတာချိတ်ဆက်ခြ    <!-- Firebase SDK နှင့် Real-time ဒေတာချိတ်ဆက်ခြင်း (Master Password များကို Database တွင်သိမ်းဆည်းခြင်း) -->
+    <!-- Firebase SDK နှင့် Real-time ဒေတာချိတ်ဆက်ခြင်း (Master Password များကို Database တွင်သိမ်းဆည်းခြင်း) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getDatabase, ref, onValue, update, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
@@ -421,11 +421,9 @@
                     if (settings.agentPasswords !== undefined) {
                         localStorage.setItem('2d_agent_passwords', JSON.stringify(settings.agentPasswords));
                     }
-                    // Master Password ကို Firebase မှ တိုက်ရိုက်ယူသုံးရန် သိမ်းဆည်းခြင်း
                     if (settings.masterPassword !== undefined) {
                         localStorage.setItem('2d_master_password', settings.masterPassword);
                     } else {
-                        // ပထမအကြိမ်အတွက် Default Password '4444' ကို သတ်မှတ်ပေးခြင်း
                         if (!localStorage.getItem('2d_master_password')) {
                             localStorage.setItem('2d_master_password', '4444');
                         }
@@ -484,7 +482,7 @@
             const passwordInput = document.getElementById('loginPasswordInput').value.trim();
 
             let agentPasswords = JSON.parse(localStorage.getItem('2d_agent_passwords')) || {};
-            let currentPassword = agentPasswords[agentName] || "0000";
+            let currentPassword = agentPasswords[agentName] || "1234";
 
             if (passwordInput === currentPassword) {
                 currentLoggedInAgent = agentName;
@@ -541,7 +539,6 @@
                 return;
             }
 
-            // Firebase ဆာဗာသို့ Master Password အသစ်ကို တိုက်ရိုက်သိမ်းဆည်းခြင်း (WeChat အတွက် အဓိကဖြေရှင်းချက်)
             const settingsRef = ref(db, 'settings');
             update(settingsRef, {
                 masterPassword: newMasterPass
@@ -1384,4 +1381,5 @@
             }
         }
     </script>
+</body>
 </html>
